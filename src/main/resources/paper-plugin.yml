@@ -1,8 +1,34 @@
 name: JEIRecipeBridge
 version: '${plugin_version}'
 main: com.mrbysco.jeicompat.JEIRecipeBridgePlugin
-api-version: '26.1.1'
+api-version: '1.21'
 author: "Mrbysco"
-description: "Synchronizes server recipes to the client, enabling JEI support."
+description: "Paper plugin: synchronizes server recipes to Fabric/NeoForge clients for JEI."
 website: "https://www.curseforge.com/minecraft/bukkit-plugins/jei-recipe-bridge"
 folia-supported: true
+commands:
+  jeibridge:
+    description: JEI Recipe Bridge commands
+    usage: /jeibridge <reload|resync|info> [player|all]
+    aliases: [jrb]
+permissions:
+  jeirecipebridge.command.resync:
+    description: Allows /jeibridge resync for yourself
+    default: true
+  jeirecipebridge.command.resync.others:
+    description: Allows /jeibridge resync <player> and resync all
+    default: op
+  jeirecipebridge.command.reload:
+    description: Allows /jeibridge reload
+    default: op
+  jeirecipebridge.command.info:
+    description: Allows /jeibridge info
+    default: true
+  jeirecipebridge.admin:
+    description: Legacy alias that grants all JEI Recipe Bridge commands
+    default: op
+    children:
+      jeirecipebridge.command.resync: true
+      jeirecipebridge.command.resync.others: true
+      jeirecipebridge.command.reload: true
+      jeirecipebridge.command.info: true

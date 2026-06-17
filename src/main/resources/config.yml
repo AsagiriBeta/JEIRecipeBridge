@@ -1,0 +1,53 @@
+# JEI Recipe Bridge configuration
+
+# Master switch. When false, no recipes are sent.
+enabled: true
+
+# Send recipes automatically when a modded player joins.
+sync-on-join: true
+
+# Delay recipe sync by this many ticks after join.
+# This plugin runs on the Paper backend only (not on Velocity/BungeeCord).
+# If players connect through a proxy, keep this small delay to avoid join race conditions.
+sync-delay-ticks: 1
+
+# Retry once when the first sync attempt fails (e.g. client brand not ready yet).
+retry-on-failed-sync: true
+sync-retry-delay-ticks: 20
+
+# Re-send recipes to online players after a datapack reload.
+sync-on-datapack-reload: true
+
+# Unlock all server recipes in the vanilla recipe book on join.
+# Helps JEI/REI discover server-side recipes without any client mod.
+discover-recipes-on-join: true
+
+# Send the yellow "Syncing recipes..." chat message to players.
+notify-player: false
+
+# Skip recipes that would crash Fabric/NeoForge clients (e.g. ingredients containing air).
+filter-invalid-recipes: true
+
+# Log each filtered recipe id to the server console.
+log-filtered-recipes: true
+
+# Recipes hidden from sync payloads. Format: namespace:key
+recipe-blacklist: []
+
+# ItemsAdder integration (server-side only, no client mod required)
+itemsadder:
+  # Enable when ItemsAdder is installed.
+  enabled: true
+  # Register showcase recipes for IA items that do not already appear in any recipe output.
+  # This makes more IA items visible to JEI through synced recipe data.
+  register-showcase-recipes: true
+  # Ask ItemsAdder to send its resource pack on join (fixes many "paper texture" issues).
+  apply-resource-pack: true
+  # Skip items marked as hidden in IA creative inventory settings.
+  skip-hidden-items: true
+
+# Send fabric:recipe_sync_finished after recipe data (needed by newer Fabric API + JEI).
+fabric-send-sync-finished: true
+
+# Verbose debug logging.
+debug: false

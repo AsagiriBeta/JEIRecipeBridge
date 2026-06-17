@@ -1,22 +1,64 @@
-name: Build and Maven
+name: Build and Release
 
-on: [push, workflow_dispatch]
+# Save Actions minutes: only run on pushes to main.
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: 21
-          cache: 'gradle'
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+          cache: gradle
+
+      - name: Read plugin version
+        id: version
+        run: echo "value=$(grep '^plugin_version=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
       - name: Build with Gradle
-        run: ./gradlew build
-      - uses: actions/upload-artifact@v5
+        run: ./gradlew build --no-daemon
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v5
         with:
-          path: ./build/libs/
+          name: JEI-Recipe-Bridge-${{ steps.version.outputs.value }}
+          path: build/libs/JEI-Recipe-Bridge-${{ steps.version.outputs.value }}.jar
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Check whether release tag already exists
+        id: release
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release tag v${VERSION} already exists; skipping GitHub Release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub Release
+        if: steps.release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.value }}
+          name: JEI Recipe Bridge ${{ steps.version.outputs.value }}
+          files: build/libs/JEI-Recipe-Bridge-${{ steps.version.outputs.value }}.jar
+          generate_release_notes: true
+          draft: false
+          prerelease: false
