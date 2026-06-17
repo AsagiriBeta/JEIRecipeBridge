@@ -1,7 +1,6 @@
 package com.mrbysco.jeicompat;
 
 import com.mrbysco.jeicompat.compat.itemsadder.ItemsAdderBridge;
-import com.mrbysco.jeicompat.listener.ItemsAdderResourcePackListener;
 import com.mrbysco.jeicompat.listener.ResourceReloadListener;
 import com.mrbysco.jeicompat.nms.NmsRecipeBridge;
 import com.mrbysco.jeicompat.sync.RecipePayloadCache;
@@ -21,9 +20,7 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 		NmsRecipeBridge recipeBridge = new NmsRecipeBridge(this);
 		ItemsAdderBridge itemsAdderBridge = new ItemsAdderBridge(this);
 		RecipePayloadCache payloadCache = new RecipePayloadCache(recipeBridge);
-		syncService = new RecipeSyncService(this, recipeBridge, payloadCache, itemsAdderBridge);
-		ItemsAdderResourcePackListener resourcePackListener = new ItemsAdderResourcePackListener(syncService);
-		syncService.setResourcePackListener(resourcePackListener);
+		syncService = new RecipeSyncService(this, recipeBridge, payloadCache);
 
 		Messenger messenger = getServer().getMessenger();
 		messenger.registerOutgoingPluginChannel(this, "neoforge:recipe_content");
@@ -31,14 +28,12 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 		messenger.registerOutgoingPluginChannel(this, "fabric:recipe_sync_finished");
 
 		getServer().getPluginManager().registerEvents(new RecipeHandler(syncService), this);
-		getServer().getPluginManager().registerEvents(resourcePackListener, this);
 		getServer().getPluginManager().registerEvents(new ResourceReloadListener(this, syncService), this);
 
 		itemsAdderBridge.registerLoadListener(() -> ServerTasks.runGlobal(this, () -> {
 			refreshRecipeCache();
 			syncService.resyncAll();
 		}));
-		itemsAdderBridge.registerResourcePackSendListener(resourcePackListener::markAwaiting);
 
 		refreshRecipeCache();
 

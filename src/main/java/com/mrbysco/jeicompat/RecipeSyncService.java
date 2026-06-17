@@ -1,7 +1,5 @@
 package com.mrbysco.jeicompat;
 
-import com.mrbysco.jeicompat.compat.itemsadder.ItemsAdderBridge;
-import com.mrbysco.jeicompat.listener.ItemsAdderResourcePackListener;
 import com.mrbysco.jeicompat.nms.RecipeBridge;
 import com.mrbysco.jeicompat.sync.ClientBrand;
 import com.mrbysco.jeicompat.sync.RecipePayloadCache;
@@ -19,28 +17,16 @@ import java.util.List;
 public final class RecipeSyncService {
 	private static final int SYNC_DELAY_TICKS = 1;
 	private static final int RETRY_DELAY_TICKS = 20;
-	private static final int RESOURCE_PACK_WAIT_TICKS = 200;
 
 	private final Plugin plugin;
 	private final RecipeBridge bridge;
 	private final RecipePayloadCache payloadCache;
-	private final ItemsAdderBridge itemsAdderBridge;
-	private ItemsAdderResourcePackListener resourcePackListener;
 	private List<NamespacedKey> recipeKeys = List.of();
 
-	public RecipeSyncService(
-			Plugin plugin,
-			RecipeBridge bridge,
-			RecipePayloadCache payloadCache,
-			ItemsAdderBridge itemsAdderBridge) {
+	public RecipeSyncService(Plugin plugin, RecipeBridge bridge, RecipePayloadCache payloadCache) {
 		this.plugin = plugin;
 		this.bridge = bridge;
 		this.payloadCache = payloadCache;
-		this.itemsAdderBridge = itemsAdderBridge;
-	}
-
-	public void setResourcePackListener(ItemsAdderResourcePackListener resourcePackListener) {
-		this.resourcePackListener = resourcePackListener;
 	}
 
 	public void refreshRecipeKeys() {
@@ -64,22 +50,6 @@ public final class RecipeSyncService {
 
 		ClientBrand brand = ClientBrand.fromBrand(player.getClientBrandName());
 		if (!brand.isSupported()) {
-			return;
-		}
-
-		if (itemsAdderBridge.isAvailable() && resourcePackListener != null) {
-			itemsAdderBridge.applyResourcePack(player);
-			player.getScheduler().runDelayed(
-					plugin,
-					task -> {
-						if (resourcePackListener.isAwaiting(player)) {
-							resourcePackListener.cancelAwaiting(player);
-							attemptSync(player);
-						}
-					},
-					null,
-					RESOURCE_PACK_WAIT_TICKS
-			);
 			return;
 		}
 

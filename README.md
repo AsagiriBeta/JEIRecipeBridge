@@ -21,7 +21,6 @@ Install on the **Paper backend only**, not on Velocity/BungeeCord.
 - Sends `fabric:recipe_sync_finished` for newer Fabric API
 - Unlocks all server recipes via `discoverRecipes()` on join
 - Re-syncs after datapack reload and ItemsAdder `/iareload`
-- If **ItemsAdder** is installed: sends its resource pack and re-syncs after it loads
 
 ## Compatibility
 
