@@ -4,21 +4,22 @@ import com.mrbysco.jeicompat.JEIRecipeBridgePlugin;
 import com.mrbysco.jeicompat.RecipeSyncService;
 import com.mrbysco.jeicompat.compat.itemsadder.ItemsAdderBridge;
 import com.mrbysco.jeicompat.nms.RecipeBridge;
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
-public final class JEIRecipeBridgeCommand implements CommandExecutor, TabCompleter {
+@NullMarked
+public final class JEIRecipeBridgeCommand implements BasicCommand {
 	private static final String PERM_RESYNC = "jeirecipebridge.command.resync";
 	private static final String PERM_RESYNC_OTHERS = "jeirecipebridge.command.resync.others";
 	private static final String PERM_RELOAD = "jeirecipebridge.command.reload";
@@ -41,72 +42,104 @@ public final class JEIRecipeBridgeCommand implements CommandExecutor, TabComplet
 	}
 
 	@Override
-	public boolean onCommand(
-			@NotNull CommandSender sender,
-			@NotNull Command command,
-			@NotNull String label,
-			@NotNull String[] args) {
+	public void execute(CommandSourceStack source, String[] args) {
+		CommandSender sender = source.getSender();
 		if (args.length == 0) {
 			sendUsage(sender);
-			return true;
+			return;
 		}
 
-		return switch (args[0].toLowerCase(Locale.ROOT)) {
+		switch (args[0].toLowerCase(Locale.ROOT)) {
 			case "reload" -> handleReload(sender);
-			case "resync" -> handleResync(sender, args, label);
+			case "resync" -> handleResync(sender, args);
 			case "info" -> handleInfo(sender);
-			default -> {
-				sendUsage(sender);
-				yield true;
-			}
-		};
+			default -> sendUsage(sender);
+		}
 	}
 
-	private boolean handleReload(CommandSender sender) {
+	@Override
+	public boolean canUse(CommandSender sender) {
+		return canReload(sender) || canResyncSelf(sender) || canResyncOthers(sender) || canInfo(sender);
+	}
+
+	@Override
+	public @Nullable String permission() {
+		return null;
+	}
+
+	@Override
+	public Collection<String> suggest(CommandSourceStack source, String[] args) {
+		CommandSender sender = source.getSender();
+		if (args.length == 1) {
+			List<String> options = new ArrayList<>();
+			if (canReload(sender)) {
+				options.add("reload");
+			}
+			if (canResyncSelf(sender) || canResyncOthers(sender)) {
+				options.add("resync");
+			}
+			if (canInfo(sender)) {
+				options.add("info");
+			}
+			return filter(options, args[0]);
+		}
+
+		if (args.length == 2 && args[0].equalsIgnoreCase("resync") && canResyncOthers(sender)) {
+			List<String> suggestions = new ArrayList<>();
+			suggestions.add("all");
+			for (Player player : Bukkit.getOnlinePlayers()) {
+				suggestions.add(player.getName());
+			}
+			return filter(suggestions, args[1]);
+		}
+
+		return List.of();
+	}
+
+	private void handleReload(CommandSender sender) {
 		if (!canReload(sender)) {
 			sendNoPermission(sender);
-			return true;
+			return;
 		}
 
 		plugin.reloadPluginConfig();
 		sender.sendMessage("§aJEI Recipe Bridge configuration reloaded.");
-		return true;
 	}
 
-	private boolean handleResync(CommandSender sender, String[] args, String label) {
+	private void handleResync(CommandSender sender, String[] args) {
 		if (args.length >= 2 && args[1].equalsIgnoreCase("all")) {
 			if (!canResyncOthers(sender)) {
 				sendNoPermission(sender);
-				return true;
+				return;
 			}
 
 			plugin.refreshRecipeContent();
 			syncService.resyncAll();
 			sender.sendMessage("§aRe-synced recipes for all online players.");
-			return true;
+			return;
 		}
 
 		Player target;
 		if (args.length >= 2) {
 			if (!canResyncOthers(sender)) {
 				sendNoPermission(sender);
-				return true;
+				return;
 			}
 
 			target = Bukkit.getPlayerExact(args[1]);
 			if (target == null) {
 				sender.sendMessage("§cPlayer not found: " + args[1]);
-				return true;
+				return;
 			}
 		} else if (sender instanceof Player player) {
 			if (!canResyncSelf(sender)) {
 				sendNoPermission(sender);
-				return true;
+				return;
 			}
 			target = player;
 		} else {
-			sender.sendMessage("§cUsage: /" + label + " resync <player|all>");
-			return true;
+			sender.sendMessage("§cUsage: /jeibridge resync <player|all>");
+			return;
 		}
 
 		if (args.length >= 2 || !(sender instanceof Player self) || self.getUniqueId().equals(target.getUniqueId())) {
@@ -124,13 +157,12 @@ public final class JEIRecipeBridgeCommand implements CommandExecutor, TabComplet
 			sender.sendMessage("§eCould not sync recipes for " + target.getName()
 					+ " (unsupported client brand or empty payload).");
 		}
-		return true;
 	}
 
-	private boolean handleInfo(CommandSender sender) {
+	private void handleInfo(CommandSender sender) {
 		if (!canInfo(sender)) {
 			sendNoPermission(sender);
-			return true;
+			return;
 		}
 
 		var config = plugin.getPluginConfig();
@@ -147,7 +179,6 @@ public final class JEIRecipeBridgeCommand implements CommandExecutor, TabComplet
 		sender.sendMessage("§7Server version: §f" + Bukkit.getVersion());
 		sender.sendMessage("§7Online players: §f" + Bukkit.getOnlinePlayers().size());
 		sender.sendMessage("§7Compatibility: §fPaper/Purpur/Folia 1.21.2-26.1.x (single jar, reflection)");
-		return true;
 	}
 
 	private void sendUsage(CommandSender sender) {
@@ -182,38 +213,6 @@ public final class JEIRecipeBridgeCommand implements CommandExecutor, TabComplet
 
 	private static boolean canInfo(CommandSender sender) {
 		return isBackendConsole(sender) || sender.hasPermission(PERM_INFO);
-	}
-
-	@Override
-	public @Nullable List<String> onTabComplete(
-			@NotNull CommandSender sender,
-			@NotNull Command command,
-			@NotNull String alias,
-			@NotNull String[] args) {
-		if (args.length == 1) {
-			List<String> options = new ArrayList<>();
-			if (canReload(sender)) {
-				options.add("reload");
-			}
-			if (canResyncSelf(sender) || canResyncOthers(sender)) {
-				options.add("resync");
-			}
-			if (canInfo(sender)) {
-				options.add("info");
-			}
-			return filter(options, args[0]);
-		}
-
-		if (args.length == 2 && args[0].equalsIgnoreCase("resync") && canResyncOthers(sender)) {
-			List<String> suggestions = new ArrayList<>();
-			suggestions.add("all");
-			for (Player player : Bukkit.getOnlinePlayers()) {
-				suggestions.add(player.getName());
-			}
-			return filter(suggestions, args[1]);
-		}
-
-		return List.of();
 	}
 
 	private static List<String> filter(List<String> options, String input) {

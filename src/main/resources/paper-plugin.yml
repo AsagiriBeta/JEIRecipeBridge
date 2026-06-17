@@ -6,11 +6,6 @@ author: "Mrbysco"
 description: "Paper plugin: synchronizes server recipes to Fabric/NeoForge clients for JEI."
 website: "https://www.curseforge.com/minecraft/bukkit-plugins/jei-recipe-bridge"
 folia-supported: true
-commands:
-  jeibridge:
-    description: JEI Recipe Bridge commands
-    usage: /jeibridge <reload|resync|info> [player|all]
-    aliases: [jrb]
 permissions:
   jeirecipebridge.command.resync:
     description: Allows /jeibridge resync for yourself

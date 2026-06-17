@@ -16,7 +16,7 @@ import org.bukkit.plugin.messaging.Messenger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class JEIRecipeBridgePlugin extends JavaPlugin {
@@ -53,10 +53,13 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 		server.getPluginManager().registerEvents(new RecipeHandler(syncService), this);
 		server.getPluginManager().registerEvents(new ResourceReloadListener(this, syncService, this::getPluginConfig), this);
 
-		var command = Objects.requireNonNull(getCommand("jeibridge"), "jeibridge command missing from plugin.yml");
-		JEIRecipeBridgeCommand executor = new JEIRecipeBridgeCommand(this, syncService, itemsAdderBridge, recipeBridge);
-		command.setExecutor(executor);
-		command.setTabCompleter(executor);
+		JEIRecipeBridgeCommand bridgeCommand = new JEIRecipeBridgeCommand(this, syncService, itemsAdderBridge, recipeBridge);
+		registerCommand(
+				"jeibridge",
+				"JEI Recipe Bridge commands",
+				List.of("jrb"),
+				bridgeCommand
+		);
 
 		PluginConfig config = getPluginConfig();
 		if (!recipeBridge.isAvailable()) {
