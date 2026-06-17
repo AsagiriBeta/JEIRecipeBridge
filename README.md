@@ -1,37 +1,34 @@
 [![](http://cf.way2muchnoise.eu/versions/1427559.svg)](https://www.curseforge.com/minecraft/bukkit-plugins/jei-recipe-bridge)
 
-# JEI Recipe Bridge #
+# JEI Recipe Bridge
 
-## About ##
-This plugin sends server recipes to connecting clients in a format expected by Fabric / NeoForge clients, allowing JEI to display them.
+Paper plugin that sends server recipes to Fabric / NeoForge clients so JEI can display them.
 
-Since Minecraft 1.21.2+, recipes are stored on the server only, which prevents JEI from showing recipes when playing on vanilla-based servers.
+Since Minecraft 1.21.2+, recipes live on the server only. This plugin bridges them to modded clients — no config, no commands, drop in and go.
 
-## Installation ##
-
-This is a **Paper / Purpur / Folia backend plugin**. It is **not** a Velocity, BungeeCord, or Waterfall proxy plugin.
+## Install
 
 1. Download the JAR from [GitHub Releases](https://github.com/AsagiriBeta/JEIRecipeBridge/releases) or [CurseForge](https://www.curseforge.com/minecraft/bukkit-plugins/jei-recipe-bridge).
-2. Place it in your **game server** `plugins/` folder (the Paper world server players actually join).
-3. Restart the Paper server (or use a plugin manager to load it).
-4. Use `/jeibridge info` in-game or on the **Paper console** to verify the bridge is `ready`.
+2. Put it in your **Paper** server `plugins/` folder.
+3. Restart.
 
-If you use a proxy (Velocity, BungeeCord, etc.), install this plugin **only on the Paper backend**. Commands and permissions apply on the backend world, not on the proxy.
+Install on the **Paper backend only**, not on Velocity/BungeeCord.
 
-## Compatibility ##
+## What it does
 
-- **Single JAR** for Paper / Purpur / Folia **1.21.2 through 26.1.x**
-- Requires **Paper** (or fork) with programmatic command registration (`registerCommand`)
-- Built with Java **21** bytecode (runs on Java 21+ servers)
-- Uses **runtime reflection** for NMS internals — no per-version plugin builds
-- Supports **Fabric** and **NeoForge** clients with JEI / REI
-- Filters recipes with invalid ingredients (e.g. air) to prevent client crashes
-- Optional **ItemsAdder** integration (server-side only)
+- Syncs recipes to **Fabric** and **NeoForge** clients on join
+- Filters invalid recipes (e.g. air ingredients) to prevent client crashes
+- Sends `fabric:recipe_sync_finished` for newer Fabric API
+- Unlocks all server recipes via `discoverRecipes()` on join
+- Re-syncs after datapack reload and ItemsAdder `/iareload`
+- If **ItemsAdder** is installed: sends its resource pack and re-syncs after it loads
 
-## License ##
-* JEI Recipe Bridge licensed under the MIT license
-  - (c) 2026 Mrbysco
-  - [![License](https://img.shields.io/badge/License-MIT-red.svg?style=flat)](http://opensource.org/licenses/MIT)
+## Compatibility
 
-## Downloads ##
-Downloads will be available on [Curseforge](https://www.curseforge.com/minecraft/bukkit-plugins/jei-recipe-bridge)
+- Single JAR for Paper / Purpur / Folia **1.21.2 – 26.1.x**
+- Java **21+**
+- Runtime reflection for NMS — no per-version builds
+
+## License
+
+MIT © 2026 Mrbysco
