@@ -144,10 +144,12 @@ final class ReflectionRecipeValidator {
 
 		Object holders = Reflect.call(ingredientItems, ingredient);
 		if (holders instanceof java.util.stream.Stream<?> stream) {
-			var iterator = stream.iterator();
-			while (iterator.hasNext()) {
-				if (isAirHolder(iterator.next())) {
-					return true;
+			try (stream) {
+				var iterator = stream.iterator();
+				while (iterator.hasNext()) {
+					if (isAirHolder(iterator.next())) {
+						return true;
+					}
 				}
 			}
 		}
