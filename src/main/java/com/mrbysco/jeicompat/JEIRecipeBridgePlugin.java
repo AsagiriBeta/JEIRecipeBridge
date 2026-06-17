@@ -48,6 +48,11 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 				syncService.resyncAll();
 			}
 		}));
+		itemsAdderBridge.registerResourcePackSendListener(player -> {
+			if (resourcePackListener != null) {
+				resourcePackListener.onItemsAdderPackSent(player);
+			}
+		});
 
 		server.getPluginManager().registerEvents(new RecipeHandler(syncService), this);
 		server.getPluginManager().registerEvents(new ResourceReloadListener(this, syncService, this::getPluginConfig), this);

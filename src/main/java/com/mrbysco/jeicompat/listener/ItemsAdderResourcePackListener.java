@@ -33,6 +33,20 @@ public final class ItemsAdderResourcePackListener implements Listener {
 		awaitingPack.add(player.getUniqueId());
 	}
 
+	public void onItemsAdderPackSent(Player player) {
+		if (!config.get().itemsAdderEnabled() || !config.get().itemsAdderWaitForResourcePack()) {
+			return;
+		}
+
+		markAwaiting(player);
+		if (config.get().debug()) {
+			JEIRecipeBridgePlugin.LOGGER.debug(
+					"ItemsAdder resource pack sent to {}; waiting for client load",
+					player.getName()
+			);
+		}
+	}
+
 	public void cancelAwaiting(Player player) {
 		awaitingPack.remove(player.getUniqueId());
 	}

@@ -178,6 +178,12 @@ public final class JEIRecipeBridgeCommand implements BasicCommand {
 				? " (" + plugin.getItemsAdderShowcaseService().registeredShowcaseCount() + " active)"
 				: ""));
 		sender.sendMessage("§7ItemsAdder wait for resource pack: §f" + config.itemsAdderWaitForResourcePack());
+		if (itemsAdderBridge.isAvailable()) {
+			sender.sendMessage("§7ItemsAdder catalog items: §f" + itemsAdderBridge.collectCatalogItems(
+					config.itemsAdderSkipHiddenItems()
+			).size());
+			sender.sendMessage("§7ItemsAdder registered recipes: §f" + itemsAdderBridge.countCustomRecipes());
+		}
 		sender.sendMessage("§7Recipe sync bridge: §f" + (recipeBridge.isAvailable() ? "ready" : "dormant"));
 		sender.sendMessage("§7Cached server recipes: §f" + recipeBridge.recipeCount());
 		sender.sendMessage("§7Server version: §f" + Bukkit.getVersion());
