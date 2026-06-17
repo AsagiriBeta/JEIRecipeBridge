@@ -1,7 +1,5 @@
 plugins {
     id 'java'
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
-    id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
 group = 'com.mrbysco'
@@ -11,30 +9,34 @@ base {
 }
 description = "Syncs recipes with JEI"
 
-java {
-    // Configure the java toolchain. This allows gradle to auto-provision JDK 21 on systems that only have JDK 11 installed for example.
-    toolchain.languageVersion = JavaLanguageVersion.of(25)
+repositories {
+    mavenCentral()
+    maven {
+        name = 'papermc'
+        url = 'https://repo.papermc.io/repository/maven-public/'
+    }
 }
 
 dependencies {
     compileOnly "io.papermc.paper:paper-api:${paper_version}"
-    paperweight.paperDevBundle("${paperweight_version}")
+    compileOnly "io.netty:netty-buffer:4.1.118.Final"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
 }
 
 tasks {
     compileJava {
-        options.release = 25
-    }
-    runServer {
-        minecraftVersion("${mc_version}")
-        jvmArgs("-Xms2G", "-Xmx2G")
+        options.release = 21
     }
 }
 
-paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.getMOJANG_PRODUCTION()
-
 processResources {
-    def props = [plugin_version: plugin_version]
+    def props = [
+            plugin_version: plugin_version,
+            mc_version: mc_version
+    ]
     getInputs().properties(props)
     filteringCharset("UTF-8")
     filesMatching(["plugin.yml", "paper-plugin.yml"]) {
