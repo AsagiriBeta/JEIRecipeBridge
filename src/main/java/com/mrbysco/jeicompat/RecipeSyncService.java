@@ -62,23 +62,25 @@ public final class RecipeSyncService {
 			return;
 		}
 
-		if (itemsAdderBridge.isAvailable()) {
+		ClientBrand brand = ClientBrand.fromBrand(player.getClientBrandName());
+		if (!brand.isSupported()) {
+			return;
+		}
+
+		if (itemsAdderBridge.isAvailable() && resourcePackListener != null) {
 			itemsAdderBridge.applyResourcePack(player);
-			if (resourcePackListener != null) {
-				resourcePackListener.markAwaiting(player);
-				player.getScheduler().runDelayed(
-						plugin,
-						task -> {
-							if (resourcePackListener.isAwaiting(player)) {
-								resourcePackListener.cancelAwaiting(player);
-								attemptSync(player);
-							}
-						},
-						null,
-						RESOURCE_PACK_WAIT_TICKS
-				);
-				return;
-			}
+			player.getScheduler().runDelayed(
+					plugin,
+					task -> {
+						if (resourcePackListener.isAwaiting(player)) {
+							resourcePackListener.cancelAwaiting(player);
+							attemptSync(player);
+						}
+					},
+					null,
+					RESOURCE_PACK_WAIT_TICKS
+			);
+			return;
 		}
 
 		player.getScheduler().runDelayed(plugin, task -> attemptSync(player), null, SYNC_DELAY_TICKS);

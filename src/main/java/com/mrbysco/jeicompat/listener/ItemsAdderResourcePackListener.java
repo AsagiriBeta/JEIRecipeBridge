@@ -39,8 +39,10 @@ public final class ItemsAdderResourcePackListener implements Listener {
 
 		switch (event.getStatus()) {
 			case SUCCESSFULLY_LOADED, DECLINED, FAILED_DOWNLOAD -> {
-				awaitingPack.remove(playerId);
-				syncService.syncTo(player);
+				if (!awaitingPack.remove(playerId)) {
+					return;
+				}
+				syncService.attemptSync(player);
 			}
 			default -> {
 			}
