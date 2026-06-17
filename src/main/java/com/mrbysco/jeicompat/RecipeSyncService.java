@@ -13,6 +13,7 @@ import org.bukkit.plugin.Plugin;
 import java.util.function.Supplier;
 
 public final class RecipeSyncService {
+	private final Plugin plugin;
 	private final Supplier<PluginConfig> config;
 	private final RecipeBridge bridge;
 	private final RecipePayloadCache payloadCache;
@@ -20,11 +21,13 @@ public final class RecipeSyncService {
 	private final ItemsAdderBridge itemsAdderBridge;
 
 	public RecipeSyncService(
+			Plugin plugin,
 			Supplier<PluginConfig> config,
 			RecipeBridge bridge,
 			RecipePayloadCache payloadCache,
 			RecipeDiscoveryService recipeDiscoveryService,
 			ItemsAdderBridge itemsAdderBridge) {
+		this.plugin = plugin;
 		this.config = config;
 		this.bridge = bridge;
 		this.payloadCache = payloadCache;
@@ -33,9 +36,8 @@ public final class RecipeSyncService {
 	}
 
 	public void scheduleSync(Player player) {
-		Plugin plugin = JEIRecipeBridgePlugin.Plugin;
 		PluginConfig currentConfig = config.get();
-		if (!currentConfig.enabled() || !currentConfig.syncOnJoin()) {
+		if (!currentConfig.enabled() || !currentConfig.syncOnJoin() || !plugin.isEnabled()) {
 			return;
 		}
 
@@ -49,9 +51,13 @@ public final class RecipeSyncService {
 	}
 
 	public void attemptSync(Player player) {
+		if (!plugin.isEnabled()) {
+			return;
+		}
+
 		if (!syncTo(player) && config.get().retryOnFailedSync()) {
 			player.getScheduler().runDelayed(
-					JEIRecipeBridgePlugin.Plugin,
+					plugin,
 					task -> syncTo(player),
 					null,
 					config.get().syncRetryDelayTicks()
@@ -60,7 +66,7 @@ public final class RecipeSyncService {
 	}
 
 	public boolean syncTo(Player player) {
-		if (!player.isOnline()) {
+		if (!player.isOnline() || !plugin.isEnabled()) {
 			return false;
 		}
 
@@ -125,7 +131,10 @@ public final class RecipeSyncService {
 	}
 
 	public void resyncAll() {
-		Plugin plugin = JEIRecipeBridgePlugin.Plugin;
+		if (!plugin.isEnabled()) {
+			return;
+		}
+
 		for (Player player : Bukkit.getOnlinePlayers()) {
 			player.getScheduler().run(plugin, task -> syncTo(player), null);
 		}

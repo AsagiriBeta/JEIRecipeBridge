@@ -10,18 +10,16 @@ import com.mrbysco.jeicompat.nms.RecipeBridge;
 import com.mrbysco.jeicompat.sync.RecipeDiscoveryService;
 import com.mrbysco.jeicompat.sync.RecipePayloadCache;
 import org.bukkit.Server;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.Messenger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class JEIRecipeBridgePlugin extends JavaPlugin {
 	public static final Logger LOGGER = LoggerFactory.getLogger("JEIRecipeBridge");
-	public static Plugin Plugin;
 	private final AtomicReference<PluginConfig> pluginConfig = new AtomicReference<>();
 	private RecipeBridge recipeBridge;
 	private ItemsAdderBridge itemsAdderBridge;
@@ -32,7 +30,6 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-		Plugin = this;
 		recipeBridge = new NmsRecipeBridge(this);
 		itemsAdderBridge = new ItemsAdderBridge(this);
 		reloadPluginConfig();
@@ -43,20 +40,23 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 		messenger.registerOutgoingPluginChannel(this, "fabric:recipe_sync");
 		messenger.registerOutgoingPluginChannel(this, "fabric:recipe_sync_finished");
 
-		itemsAdderBridge.registerLoadListener(() -> {
+		itemsAdderBridge.registerLoadListener(() -> com.mrbysco.jeicompat.util.ServerTasks.runGlobal(this, () -> {
 			refreshRecipeContent();
 			if (syncService != null) {
 				syncService.resyncAll();
 			}
-		});
+		}));
 
 		server.getPluginManager().registerEvents(new RecipeHandler(syncService), this);
 		server.getPluginManager().registerEvents(new ResourceReloadListener(this, syncService, this::getPluginConfig), this);
 
-		var command = Objects.requireNonNull(getCommand("jeibridge"), "jeibridge command missing from plugin.yml");
-		JEIRecipeBridgeCommand executor = new JEIRecipeBridgeCommand(this, syncService, itemsAdderBridge, recipeBridge);
-		command.setExecutor(executor);
-		command.setTabCompleter(executor);
+		JEIRecipeBridgeCommand bridgeCommand = new JEIRecipeBridgeCommand(this, syncService, itemsAdderBridge, recipeBridge);
+		registerCommand(
+				"jeibridge",
+				"JEI Recipe Bridge commands",
+				List.of("jrb"),
+				bridgeCommand
+		);
 
 		PluginConfig config = getPluginConfig();
 		if (!recipeBridge.isAvailable()) {
@@ -76,18 +76,23 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 		if (itemsAdderShowcaseService != null) {
 			itemsAdderShowcaseService.clearShowcaseRecipes();
 		}
-		Plugin = null;
+		Messenger messenger = getServer().getMessenger();
+		messenger.unregisterOutgoingPluginChannel(this, "neoforge:recipe_content");
+		messenger.unregisterOutgoingPluginChannel(this, "fabric:recipe_sync");
+		messenger.unregisterOutgoingPluginChannel(this, "fabric:recipe_sync_finished");
 	}
 
 	public void reloadPluginConfig() {
+		reloadConfig();
 		PluginConfig config = PluginConfig.load(this);
 		pluginConfig.set(config);
 
 		if (payloadCache == null) {
 			payloadCache = new RecipePayloadCache(this::getPluginConfig, recipeBridge);
 			recipeDiscoveryService = new RecipeDiscoveryService(this::getPluginConfig);
-			itemsAdderShowcaseService = new ItemsAdderShowcaseService(this::getPluginConfig, itemsAdderBridge);
+			itemsAdderShowcaseService = new ItemsAdderShowcaseService(this, this::getPluginConfig, itemsAdderBridge);
 			syncService = new RecipeSyncService(
+					this,
 					this::getPluginConfig,
 					recipeBridge,
 					payloadCache,
@@ -101,7 +106,7 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 
 	public void refreshRecipeContent() {
 		if (itemsAdderShowcaseService != null) {
-			itemsAdderShowcaseService.refreshShowcaseRecipes();
+			itemsAdderShowcaseService.scheduleRefreshShowcaseRecipes();
 		}
 		if (recipeDiscoveryService != null) {
 			recipeDiscoveryService.refreshRecipeKeys();

@@ -1,5 +1,6 @@
 package com.mrbysco.jeicompat.nms;
 
+import com.mrbysco.jeicompat.JEIRecipeBridgePlugin;
 import com.mrbysco.jeicompat.config.PluginConfig;
 import com.mrbysco.jeicompat.util.Reflect;
 import io.netty.buffer.ByteBuf;
@@ -59,7 +60,6 @@ public final class NmsRecipeBridge implements RecipeBridge {
 	private Object fabricPayloadId;
 	private Object fabricFinishedPayloadId;
 	private Object neoForgePayloadId;
-	private boolean sendFailureLogged;
 
 	private ReflectionRecipeValidator validator;
 
@@ -384,14 +384,9 @@ public final class NmsRecipeBridge implements RecipeBridge {
 	}
 
 	private void logSendFailure(Player player, Exception exception) {
-		if (!sendFailureLogged) {
-			sendFailureLogged = true;
-			plugin.getLogger().severe(
-					"Failed to send recipe payload to " + player.getName() + "; suppressing further send errors."
-			);
-			if (plugin.getConfig().getBoolean("debug", false)) {
-				exception.printStackTrace();
-			}
+		plugin.getLogger().warning("Failed to send recipe payload to " + player.getName() + ": " + exception.getMessage());
+		if (plugin instanceof JEIRecipeBridgePlugin bridgePlugin && bridgePlugin.getPluginConfig().debug()) {
+			exception.printStackTrace();
 		}
 	}
 }

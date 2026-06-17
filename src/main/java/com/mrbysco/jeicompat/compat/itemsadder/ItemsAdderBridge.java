@@ -44,13 +44,15 @@ public final class ItemsAdderBridge {
 	}
 
 	private void initialize() {
-		if (Bukkit.getPluginManager().getPlugin("ItemsAdder") == null) {
+		Plugin itemsAdder = Bukkit.getPluginManager().getPlugin("ItemsAdder");
+		if (itemsAdder == null) {
 			available = false;
 			return;
 		}
 
 		try {
-			customStackClass = Class.forName("dev.lone.itemsadder.api.CustomStack");
+			ClassLoader classLoader = itemsAdder.getClass().getClassLoader();
+			customStackClass = Class.forName("dev.lone.itemsadder.api.CustomStack", true, classLoader);
 			getNamespacedIdsInRegistry = customStackClass.getMethod("getNamespacedIdsInRegistry");
 			getInstance = customStackClass.getMethod("getInstance", String.class);
 			getItemStack = customStackClass.getMethod("getItemStack");
@@ -58,7 +60,7 @@ public final class ItemsAdderBridge {
 			byItemStack = customStackClass.getMethod("byItemStack", ItemStack.class);
 			getNamespacedId = customStackClass.getMethod("getNamespacedID");
 
-			Class<?> itemsAdderClass = Class.forName("dev.lone.itemsadder.api.ItemsAdder");
+			Class<?> itemsAdderClass = Class.forName("dev.lone.itemsadder.api.ItemsAdder", true, classLoader);
 			applyResourcepack = itemsAdderClass.getMethod("applyResourcepack", Player.class);
 
 			available = true;
@@ -173,9 +175,17 @@ public final class ItemsAdderBridge {
 		}
 
 		try {
+			Plugin itemsAdder = Bukkit.getPluginManager().getPlugin("ItemsAdder");
+			if (itemsAdder == null) {
+				return;
+			}
+
+			ClassLoader classLoader = itemsAdder.getClass().getClassLoader();
 			@SuppressWarnings("unchecked")
 			Class<? extends Event> eventClass = (Class<? extends Event>) Class.forName(
-					"dev.lone.itemsadder.api.Events.ItemsAdderLoadDataEvent"
+					"dev.lone.itemsadder.api.Events.ItemsAdderLoadDataEvent",
+					true,
+					classLoader
 			);
 			Listener listener = new Listener() {
 			};

@@ -21,6 +21,7 @@ If you use a proxy (Velocity, BungeeCord, etc.), install this plugin **only on t
 ## Compatibility ##
 
 - **Single JAR** for Paper / Purpur / Folia **1.21.2 through 26.1.x**
+- Requires **Paper** (or fork) with programmatic command registration (`registerCommand`)
 - Built with Java **21** bytecode (runs on Java 21+ servers)
 - Uses **runtime reflection** for NMS internals — no per-version plugin builds
 - Supports **Fabric** and **NeoForge** clients with JEI / REI

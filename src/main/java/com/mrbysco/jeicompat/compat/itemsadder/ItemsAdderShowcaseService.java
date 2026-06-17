@@ -2,11 +2,13 @@ package com.mrbysco.jeicompat.compat.itemsadder;
 
 import com.mrbysco.jeicompat.JEIRecipeBridgePlugin;
 import com.mrbysco.jeicompat.config.PluginConfig;
+import com.mrbysco.jeicompat.util.ServerTasks;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapelessRecipe;
+import org.bukkit.plugin.Plugin;
 
 import java.util.HashSet;
 import java.util.List;
@@ -18,13 +20,19 @@ import java.util.function.Supplier;
  * This stays entirely on the Paper server and does not require any client mod.
  */
 public final class ItemsAdderShowcaseService {
+	private final Plugin plugin;
 	private final Supplier<PluginConfig> config;
 	private final ItemsAdderBridge itemsAdderBridge;
 	private final Set<NamespacedKey> registeredKeys = new HashSet<>();
 
-	public ItemsAdderShowcaseService(Supplier<PluginConfig> config, ItemsAdderBridge itemsAdderBridge) {
+	public ItemsAdderShowcaseService(Plugin plugin, Supplier<PluginConfig> config, ItemsAdderBridge itemsAdderBridge) {
+		this.plugin = plugin;
 		this.config = config;
 		this.itemsAdderBridge = itemsAdderBridge;
+	}
+
+	public void scheduleRefreshShowcaseRecipes() {
+		ServerTasks.runGlobal(plugin, this::refreshShowcaseRecipes);
 	}
 
 	public void refreshShowcaseRecipes() {
@@ -56,7 +64,7 @@ public final class ItemsAdderShowcaseService {
 	}
 
 	public void clearShowcaseRecipes() {
-		for (NamespacedKey key : registeredKeys) {
+		for (NamespacedKey key : Set.copyOf(registeredKeys)) {
 			Bukkit.removeRecipe(key);
 		}
 		registeredKeys.clear();
@@ -69,7 +77,7 @@ public final class ItemsAdderShowcaseService {
 
 	private boolean registerShowcaseRecipe(ItemsAdderBridge.CatalogItem catalogItem) {
 		NamespacedKey key = new NamespacedKey(
-				JEIRecipeBridgePlugin.Plugin,
+				plugin,
 				ItemsAdderBridge.showcaseKeySuffix(catalogItem.namespacedId())
 		);
 
