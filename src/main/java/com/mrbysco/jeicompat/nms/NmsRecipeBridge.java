@@ -1,7 +1,5 @@
 package com.mrbysco.jeicompat.nms;
 
-import com.mrbysco.jeicompat.JEIRecipeBridgePlugin;
-import com.mrbysco.jeicompat.config.PluginConfig;
 import com.mrbysco.jeicompat.util.Reflect;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -17,7 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public final class NmsRecipeBridge implements RecipeBridge {
 	private static final String FABRIC_CHANNEL = "fabric:recipe_sync";
@@ -222,9 +219,9 @@ public final class NmsRecipeBridge implements RecipeBridge {
 	}
 
 	@Override
-	public byte[] buildFabricPayload(PluginConfig config, RecipeFilterListener listener) {
+	public byte[] buildFabricPayload() {
 		refreshRecipes();
-		List<Object> syncableHolders = collectSyncableHolders(config, listener);
+		List<Object> syncableHolders = collectSyncableHolders();
 
 		Map<Object, List<Object>> bySerializer = new LinkedHashMap<>();
 		for (Object holder : syncableHolders) {
@@ -258,9 +255,9 @@ public final class NmsRecipeBridge implements RecipeBridge {
 	}
 
 	@Override
-	public NeoForgePayload buildNeoForgePayload(PluginConfig config, RecipeFilterListener listener) {
+	public NeoForgePayload buildNeoForgePayload() {
 		refreshRecipes();
-		List<Object> syncableHolders = collectSyncableHolders(config, listener);
+		List<Object> syncableHolders = collectSyncableHolders();
 
 		LinkedHashSet<Object> types = new LinkedHashSet<>();
 		for (Object holder : syncableHolders) {
@@ -301,43 +298,21 @@ public final class NmsRecipeBridge implements RecipeBridge {
 		sendPacket(player, payload.tagPacket());
 	}
 
-	private List<Object> collectSyncableHolders(PluginConfig config, RecipeFilterListener listener) {
-		Set<String> blacklist = config.recipeBlacklist();
+	private List<Object> collectSyncableHolders() {
 		List<Object> holders = new ArrayList<>();
 
 		for (Object holder : Reflect.asIterable(recipesCache)) {
-			String recipeId = recipeId(holder);
-			if (isBlacklisted(recipeId, blacklist)) {
-				listener.onFiltered(recipeId, "recipe is blacklisted");
+			Object recipe = Reflect.call(holderValue, holder);
+			if (!validator.isSafeForClientSync(recipe)) {
 				continue;
 			}
-
-			if (config.filterInvalidRecipes()) {
-				Object recipe = Reflect.call(holderValue, holder);
-				if (!validator.isSafeForClientSync(recipe)) {
-					listener.onFiltered(recipeId, "ingredient contains air or is otherwise invalid");
-					continue;
-				}
-				if (!validator.canEncode(recipe, registryAccess)) {
-					listener.onFiltered(recipeId, "failed server-side encode validation");
-					continue;
-				}
+			if (!validator.canEncode(recipe, registryAccess)) {
+				continue;
 			}
-
 			holders.add(holder);
 		}
 
 		return holders;
-	}
-
-	private String recipeId(Object holder) {
-		Object id = Reflect.call(holderId, holder);
-		Object location = Reflect.call(resourceKeyLocation, id);
-		return String.valueOf(location);
-	}
-
-	private static boolean isBlacklisted(String recipeId, Set<String> blacklist) {
-		return !blacklist.isEmpty() && blacklist.contains(recipeId);
 	}
 
 	private Object buildTagsPacket() {
@@ -385,8 +360,5 @@ public final class NmsRecipeBridge implements RecipeBridge {
 
 	private void logSendFailure(Player player, Exception exception) {
 		plugin.getLogger().warning("Failed to send recipe payload to " + player.getName() + ": " + exception.getMessage());
-		if (plugin instanceof JEIRecipeBridgePlugin bridgePlugin && bridgePlugin.getPluginConfig().debug()) {
-			exception.printStackTrace();
-		}
 	}
 }

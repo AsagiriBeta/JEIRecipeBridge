@@ -1,53 +1,59 @@
 package com.mrbysco.jeicompat;
 
-import com.mrbysco.jeicompat.compat.itemsadder.ItemsAdderBridge;
-import com.mrbysco.jeicompat.config.PluginConfig;
 import com.mrbysco.jeicompat.nms.RecipeBridge;
 import com.mrbysco.jeicompat.sync.ClientBrand;
-import com.mrbysco.jeicompat.sync.RecipeDiscoveryService;
 import com.mrbysco.jeicompat.sync.RecipePayloadCache;
 import org.bukkit.Bukkit;
+import org.bukkit.Keyed;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.Plugin;
 
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public final class RecipeSyncService {
+	private static final int SYNC_DELAY_TICKS = 1;
+	private static final int RETRY_DELAY_TICKS = 20;
+
 	private final Plugin plugin;
-	private final Supplier<PluginConfig> config;
 	private final RecipeBridge bridge;
 	private final RecipePayloadCache payloadCache;
-	private final RecipeDiscoveryService recipeDiscoveryService;
-	private final ItemsAdderBridge itemsAdderBridge;
+	private List<NamespacedKey> recipeKeys = List.of();
 
-	public RecipeSyncService(
-			Plugin plugin,
-			Supplier<PluginConfig> config,
-			RecipeBridge bridge,
-			RecipePayloadCache payloadCache,
-			RecipeDiscoveryService recipeDiscoveryService,
-			ItemsAdderBridge itemsAdderBridge) {
+	public RecipeSyncService(Plugin plugin, RecipeBridge bridge, RecipePayloadCache payloadCache) {
 		this.plugin = plugin;
-		this.config = config;
 		this.bridge = bridge;
 		this.payloadCache = payloadCache;
-		this.recipeDiscoveryService = recipeDiscoveryService;
-		this.itemsAdderBridge = itemsAdderBridge;
+	}
+
+	public void refreshRecipeKeys() {
+		List<NamespacedKey> keys = new ArrayList<>();
+		for (Recipe recipe : iteratorToIterable(Bukkit.recipeIterator())) {
+			if (recipe instanceof Keyed keyed) {
+				keys.add(keyed.getKey());
+			}
+		}
+		recipeKeys = List.copyOf(keys);
+	}
+
+	public void invalidateCache() {
+		payloadCache.invalidate();
 	}
 
 	public void scheduleSync(Player player) {
-		PluginConfig currentConfig = config.get();
-		if (!currentConfig.enabled() || !currentConfig.syncOnJoin() || !plugin.isEnabled()) {
+		if (!plugin.isEnabled()) {
 			return;
 		}
 
-		int delay = currentConfig.syncDelayTicks();
-		if (delay <= 0) {
-			attemptSync(player);
+		ClientBrand brand = ClientBrand.fromBrand(player.getClientBrandName());
+		if (!brand.isSupported()) {
 			return;
 		}
 
-		player.getScheduler().runDelayed(plugin, task -> attemptSync(player), null, delay);
+		player.getScheduler().runDelayed(plugin, task -> attemptSync(player), null, SYNC_DELAY_TICKS);
 	}
 
 	public void attemptSync(Player player) {
@@ -55,46 +61,24 @@ public final class RecipeSyncService {
 			return;
 		}
 
-		if (!syncTo(player) && config.get().retryOnFailedSync()) {
-			player.getScheduler().runDelayed(
-					plugin,
-					task -> syncTo(player),
-					null,
-					config.get().syncRetryDelayTicks()
-			);
+		if (!syncTo(player)) {
+			player.getScheduler().runDelayed(plugin, task -> syncTo(player), null, RETRY_DELAY_TICKS);
 		}
 	}
 
 	public boolean syncTo(Player player) {
-		if (!player.isOnline() || !plugin.isEnabled()) {
-			return false;
-		}
-
-		PluginConfig currentConfig = config.get();
-		if (!currentConfig.enabled() || !bridge.isAvailable()) {
+		if (!player.isOnline() || !plugin.isEnabled() || !bridge.isAvailable()) {
 			return false;
 		}
 
 		ClientBrand brand = ClientBrand.fromBrand(player.getClientBrandName());
 		if (!brand.isSupported()) {
-			if (currentConfig.debug()) {
-				JEIRecipeBridgePlugin.LOGGER.debug(
-						"Skipping recipe sync for {}: unsupported client brand",
-						player.getName()
-				);
-			}
 			return false;
 		}
 
 		try {
-			if (currentConfig.itemsAdderEnabled() && currentConfig.itemsAdderApplyResourcePack()) {
-				itemsAdderBridge.applyResourcePack(player);
-			}
-
-			recipeDiscoveryService.discoverRecipes(player);
-
-			if (currentConfig.notifyPlayer()) {
-				player.sendMessage("§6JEI Recipe Bridge: Syncing recipes...§r");
+			if (!recipeKeys.isEmpty()) {
+				player.discoverRecipes(recipeKeys);
 			}
 
 			switch (brand) {
@@ -104,9 +88,7 @@ public final class RecipeSyncService {
 						return false;
 					}
 					bridge.sendFabric(player, payload);
-					if (currentConfig.fabricSendSyncFinished()) {
-						bridge.sendFabricSyncFinished(player);
-					}
+					bridge.sendFabricSyncFinished(player);
 				}
 				case NEOFORGE -> {
 					RecipeBridge.NeoForgePayload payload = payloadCache.neoForgePayload();
@@ -118,10 +100,6 @@ public final class RecipeSyncService {
 				default -> {
 					return false;
 				}
-			}
-
-			if (currentConfig.debug()) {
-				JEIRecipeBridgePlugin.LOGGER.debug("Synced recipes to {} ({})", player.getName(), brand);
 			}
 			return true;
 		} catch (Exception exception) {
@@ -140,7 +118,7 @@ public final class RecipeSyncService {
 		}
 	}
 
-	public void invalidateCache() {
-		payloadCache.invalidate();
+	private static Iterable<Recipe> iteratorToIterable(Iterator<Recipe> iterator) {
+		return () -> iterator;
 	}
 }

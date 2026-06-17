@@ -1,6 +1,5 @@
 package com.mrbysco.jeicompat.nms;
 
-import com.mrbysco.jeicompat.config.PluginConfig;
 import org.bukkit.entity.Player;
 
 public interface RecipeBridge {
@@ -11,9 +10,9 @@ public interface RecipeBridge {
 
 	int recipeCount();
 
-	byte[] buildFabricPayload(PluginConfig config, RecipeFilterListener listener);
+	byte[] buildFabricPayload();
 
-	NeoForgePayload buildNeoForgePayload(PluginConfig config, RecipeFilterListener listener);
+	NeoForgePayload buildNeoForgePayload();
 
 	void sendFabric(Player player, byte[] payload);
 
