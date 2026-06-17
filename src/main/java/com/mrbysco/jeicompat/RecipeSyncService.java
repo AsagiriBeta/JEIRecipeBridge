@@ -2,6 +2,7 @@ package com.mrbysco.jeicompat;
 
 import com.mrbysco.jeicompat.compat.itemsadder.ItemsAdderBridge;
 import com.mrbysco.jeicompat.config.PluginConfig;
+import com.mrbysco.jeicompat.listener.ItemsAdderResourcePackListener;
 import com.mrbysco.jeicompat.nms.RecipeBridge;
 import com.mrbysco.jeicompat.sync.ClientBrand;
 import com.mrbysco.jeicompat.sync.RecipeDiscoveryService;
@@ -19,6 +20,7 @@ public final class RecipeSyncService {
 	private final RecipePayloadCache payloadCache;
 	private final RecipeDiscoveryService recipeDiscoveryService;
 	private final ItemsAdderBridge itemsAdderBridge;
+	private ItemsAdderResourcePackListener resourcePackListener;
 
 	public RecipeSyncService(
 			Plugin plugin,
@@ -35,9 +37,33 @@ public final class RecipeSyncService {
 		this.itemsAdderBridge = itemsAdderBridge;
 	}
 
+	public void setResourcePackListener(ItemsAdderResourcePackListener resourcePackListener) {
+		this.resourcePackListener = resourcePackListener;
+	}
+
 	public void scheduleSync(Player player) {
 		PluginConfig currentConfig = config.get();
 		if (!currentConfig.enabled() || !currentConfig.syncOnJoin() || !plugin.isEnabled()) {
+			return;
+		}
+
+		if (currentConfig.itemsAdderEnabled() && currentConfig.itemsAdderApplyResourcePack()) {
+			itemsAdderBridge.applyResourcePack(player);
+		}
+
+		if (shouldWaitForResourcePack(currentConfig)) {
+			resourcePackListener.markAwaiting(player);
+			player.getScheduler().runDelayed(
+					plugin,
+					task -> {
+						if (resourcePackListener.isAwaiting(player)) {
+							resourcePackListener.cancelAwaiting(player);
+							attemptSync(player);
+						}
+					},
+					null,
+					currentConfig.itemsAdderResourcePackWaitTicks()
+			);
 			return;
 		}
 
@@ -87,10 +113,6 @@ public final class RecipeSyncService {
 		}
 
 		try {
-			if (currentConfig.itemsAdderEnabled() && currentConfig.itemsAdderApplyResourcePack()) {
-				itemsAdderBridge.applyResourcePack(player);
-			}
-
 			recipeDiscoveryService.discoverRecipes(player);
 
 			if (currentConfig.notifyPlayer()) {
@@ -142,5 +164,12 @@ public final class RecipeSyncService {
 
 	public void invalidateCache() {
 		payloadCache.invalidate();
+	}
+
+	private boolean shouldWaitForResourcePack(PluginConfig currentConfig) {
+		return currentConfig.itemsAdderEnabled()
+				&& currentConfig.itemsAdderApplyResourcePack()
+				&& currentConfig.itemsAdderWaitForResourcePack()
+				&& resourcePackListener != null;
 	}
 }

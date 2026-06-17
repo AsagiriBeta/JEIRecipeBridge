@@ -4,6 +4,7 @@ import com.mrbysco.jeicompat.command.JEIRecipeBridgeCommand;
 import com.mrbysco.jeicompat.compat.itemsadder.ItemsAdderBridge;
 import com.mrbysco.jeicompat.compat.itemsadder.ItemsAdderShowcaseService;
 import com.mrbysco.jeicompat.config.PluginConfig;
+import com.mrbysco.jeicompat.listener.ItemsAdderResourcePackListener;
 import com.mrbysco.jeicompat.listener.ResourceReloadListener;
 import com.mrbysco.jeicompat.nms.NmsRecipeBridge;
 import com.mrbysco.jeicompat.nms.RecipeBridge;
@@ -27,6 +28,7 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 	private RecipePayloadCache payloadCache;
 	private RecipeDiscoveryService recipeDiscoveryService;
 	private RecipeSyncService syncService;
+	private ItemsAdderResourcePackListener resourcePackListener;
 
 	@Override
 	public void onEnable() {
@@ -99,6 +101,9 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 					recipeDiscoveryService,
 					itemsAdderBridge
 			);
+			resourcePackListener = new ItemsAdderResourcePackListener(syncService, this::getPluginConfig);
+			syncService.setResourcePackListener(resourcePackListener);
+			getServer().getPluginManager().registerEvents(resourcePackListener, this);
 		}
 
 		refreshRecipeContent();
@@ -118,5 +123,9 @@ public final class JEIRecipeBridgePlugin extends JavaPlugin {
 
 	public PluginConfig getPluginConfig() {
 		return pluginConfig.get();
+	}
+
+	public ItemsAdderShowcaseService getItemsAdderShowcaseService() {
+		return itemsAdderShowcaseService;
 	}
 }

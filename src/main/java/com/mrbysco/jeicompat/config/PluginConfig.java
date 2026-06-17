@@ -22,6 +22,8 @@ public final class PluginConfig {
 	private final boolean itemsAdderEnabled;
 	private final boolean itemsAdderRegisterShowcaseRecipes;
 	private final boolean itemsAdderApplyResourcePack;
+	private final boolean itemsAdderWaitForResourcePack;
+	private final int itemsAdderResourcePackWaitTicks;
 	private final boolean itemsAdderSkipHiddenItems;
 	private final boolean fabricSendSyncFinished;
 	private final boolean debug;
@@ -41,6 +43,8 @@ public final class PluginConfig {
 			boolean itemsAdderEnabled,
 			boolean itemsAdderRegisterShowcaseRecipes,
 			boolean itemsAdderApplyResourcePack,
+			boolean itemsAdderWaitForResourcePack,
+			int itemsAdderResourcePackWaitTicks,
 			boolean itemsAdderSkipHiddenItems,
 			boolean fabricSendSyncFinished,
 			boolean debug) {
@@ -58,6 +62,8 @@ public final class PluginConfig {
 		this.itemsAdderEnabled = itemsAdderEnabled;
 		this.itemsAdderRegisterShowcaseRecipes = itemsAdderRegisterShowcaseRecipes;
 		this.itemsAdderApplyResourcePack = itemsAdderApplyResourcePack;
+		this.itemsAdderWaitForResourcePack = itemsAdderWaitForResourcePack;
+		this.itemsAdderResourcePackWaitTicks = itemsAdderResourcePackWaitTicks;
 		this.itemsAdderSkipHiddenItems = itemsAdderSkipHiddenItems;
 		this.fabricSendSyncFinished = fabricSendSyncFinished;
 		this.debug = debug;
@@ -84,8 +90,10 @@ public final class PluginConfig {
 				config.getBoolean("log-filtered-recipes", true),
 				Collections.unmodifiableSet(blacklist),
 				itemsAdderEnabled,
-				config.getBoolean("itemsadder.register-showcase-recipes", true),
+				config.getBoolean("itemsadder.register-showcase-recipes", false),
 				config.getBoolean("itemsadder.apply-resource-pack", true),
+				config.getBoolean("itemsadder.wait-for-resource-pack", true),
+				Math.max(20, config.getInt("itemsadder.resource-pack-wait-timeout-ticks", 200)),
 				config.getBoolean("itemsadder.skip-hidden-items", true),
 				config.getBoolean("fabric-send-sync-finished", true),
 				config.getBoolean("debug", false)
@@ -146,6 +154,14 @@ public final class PluginConfig {
 
 	public boolean itemsAdderApplyResourcePack() {
 		return itemsAdderApplyResourcePack;
+	}
+
+	public boolean itemsAdderWaitForResourcePack() {
+		return itemsAdderWaitForResourcePack;
+	}
+
+	public int itemsAdderResourcePackWaitTicks() {
+		return itemsAdderResourcePackWaitTicks;
 	}
 
 	public boolean itemsAdderSkipHiddenItems() {

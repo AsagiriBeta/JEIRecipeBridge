@@ -61,6 +61,12 @@ public final class ItemsAdderShowcaseService {
 				"Registered {} ItemsAdder showcase recipe(s) for JEI recipe indexing",
 				registered
 		);
+		if (registered > 0) {
+			JEIRecipeBridgePlugin.LOGGER.warn(
+					"Showcase recipes often appear as vanilla paper in JEI and do not populate the item list. "
+							+ "Prefer real ItemsAdder recipes in IA YAML; set itemsadder.register-showcase-recipes: false to disable."
+			);
+		}
 	}
 
 	public void clearShowcaseRecipes() {
@@ -68,6 +74,10 @@ public final class ItemsAdderShowcaseService {
 			Bukkit.removeRecipe(key);
 		}
 		registeredKeys.clear();
+	}
+
+	public int registeredShowcaseCount() {
+		return registeredKeys.size();
 	}
 
 	private boolean shouldRegisterShowcaseRecipes() {

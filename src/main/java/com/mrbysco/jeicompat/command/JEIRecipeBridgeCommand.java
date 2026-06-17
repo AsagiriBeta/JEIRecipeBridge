@@ -173,12 +173,20 @@ public final class JEIRecipeBridgeCommand implements BasicCommand {
 		sender.sendMessage("§7Filter invalid recipes: §f" + config.filterInvalidRecipes());
 		sender.sendMessage("§7Recipe blacklist entries: §f" + config.recipeBlacklist().size());
 		sender.sendMessage("§7ItemsAdder integration: §f" + (itemsAdderBridge.isAvailable() ? "detected" : "not found"));
-		sender.sendMessage("§7ItemsAdder showcase recipes: §f" + config.itemsAdderRegisterShowcaseRecipes());
+		sender.sendMessage("§7ItemsAdder showcase recipes: §f" + config.itemsAdderRegisterShowcaseRecipes()
+				+ (plugin.getItemsAdderShowcaseService() != null
+				? " (" + plugin.getItemsAdderShowcaseService().registeredShowcaseCount() + " active)"
+				: ""));
+		sender.sendMessage("§7ItemsAdder wait for resource pack: §f" + config.itemsAdderWaitForResourcePack());
 		sender.sendMessage("§7Recipe sync bridge: §f" + (recipeBridge.isAvailable() ? "ready" : "dormant"));
 		sender.sendMessage("§7Cached server recipes: §f" + recipeBridge.recipeCount());
 		sender.sendMessage("§7Server version: §f" + Bukkit.getVersion());
 		sender.sendMessage("§7Online players: §f" + Bukkit.getOnlinePlayers().size());
 		sender.sendMessage("§7Compatibility: §fPaper/Purpur/Folia 1.21.2-26.1.x (single jar, reflection)");
+		if (itemsAdderBridge.isAvailable()) {
+			sender.sendMessage("§eNote: §7IA custom items cannot appear in JEI's item list without client IA support.");
+			sender.sendMessage("§7Define real ItemsAdder recipes in IA YAML and accept the IA resource pack.");
+		}
 	}
 
 	private void sendUsage(CommandSender sender) {

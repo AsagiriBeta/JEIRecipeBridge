@@ -34,15 +34,19 @@ log-filtered-recipes: true
 # Recipes hidden from sync payloads. Format: namespace:key
 recipe-blacklist: []
 
-# ItemsAdder integration (server-side only, no client mod required)
+# ItemsAdder integration (server-side only)
 itemsadder:
   # Enable when ItemsAdder is installed.
   enabled: true
-  # Register showcase recipes for IA items that do not already appear in any recipe output.
-  # This makes more IA items visible to JEI through synced recipe data.
-  register-showcase-recipes: true
-  # Ask ItemsAdder to send its resource pack on join (fixes many "paper texture" issues).
+  # Showcase recipes register fake "paper -> IA item" recipes for items without recipes.
+  # This often clutters JEI with pages of vanilla paper crafts and does NOT add IA items to the
+  # right-side item list. Prefer defining real ItemsAdder recipes in IA YAML instead.
+  register-showcase-recipes: false
+  # Ask ItemsAdder to send its resource pack on join (required for correct IA textures in JEI).
   apply-resource-pack: true
+  # Wait for the resource pack before the first recipe sync, then sync again when it loads.
+  wait-for-resource-pack: true
+  resource-pack-wait-timeout-ticks: 200
   # Skip items marked as hidden in IA creative inventory settings.
   skip-hidden-items: true
 
